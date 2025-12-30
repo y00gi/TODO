@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tasks</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: #fff;
+            width: 420px;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            margin-top: 0;
+            text-align: center;
+        }
+
+        .add-btn {
+            display: block;
+            text-align: center;
+            margin-bottom: 16px;
+            text-decoration: none;
+            background: #007bff;
+            color: #fff;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        li:last-child {
+            border-bottom: none;
+        }
+
+        .status {
+            font-size: 12px;
+            color: #666;
+        }
+
+        button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #c82333;
+        }
+
+        .empty {
+            text-align: center;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Task List</h2>
+
+    <a class="add-btn" href="{% url 'task_add' %}">+ Add Task</a>
+
+    <ul id="task-list"></ul>
+</div>
+
+<script>
+fetch("/api/tasks/")
+  .then(response => response.json())
+  .then(data => {
+      const ul = document.getElementById("task-list");
+
+      if (!data.data || data.data.length === 0) {
+          ul.innerHTML = "<li class='empty'>No tasks found</li>";
+          return;
+      }
+
+      data.data.forEach(task => {
+            const li = document.createElement("li");
+
+            const statusColor = task.status === "DONE" ? "#28a745" : "#ffc107";
+            const statusText = task.status === "DONE" ? "DONE" : "PENDING";
+            const dueDate = task.due_date ? task.due_date : "No deadline";
+
+            li.innerHTML = `
+                <div>
+                    <strong>${task.title}</strong><br>
+
+                    <span style="
+                        font-size:12px;
+                        padding:2px 6px;
+                        border-radius:4px;
+                        background:${statusColor};
+                        color:#000;
+                    ">
+                        ${statusText}
+                    </span>
+
+                    <div style="font-size:12px; color:#555; margin-top:4px;">
+                        📅 ${dueDate}
+                    </div>
+                </div>
+
+                <div>
+                    ${task.status !== "DONE" ? `
+                        <button
+                            style="background:#28a745; margin-right:6px;"
+                            onclick="markDone(${task.id})">
+                            Done
+                        </button>
+                    ` : ""}
+
+                    <button onclick="deleteTask(${task.id})">Delete</button>
+                </div>
+            `;
+
+            ul.appendChild(li);
+        });
+  });
+
+function deleteTask(id) {
+    fetch(`/api/tasks/${id}/`, {
+        method: "DELETE"
+    }).then(() => location.reload());
+}
+
+function markDone(id) {
+    fetch(`/api/tasks/${id}/`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ status: "DONE" })
+    }).then(response => {
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert("Failed to update task");
+        }
+    });
+}
+
+</script>
+
+</body>
+</html>

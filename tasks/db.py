@@ -50,3 +50,57 @@ def get_all_tasks():
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+def get_task_by_id(task_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def update_task(task_id, title=None, description=None, due_date=None, status=None):
+    fields = []
+    values = []
+
+    if title is not None:
+        fields.append("title = ?")
+        values.append(title)
+    if description is not None:
+        fields.append("description = ?")
+        values.append(description)
+    if due_date is not None:
+        fields.append("due_date = ?")
+        values.append(due_date)
+    if status is not None:
+        fields.append("status = ?")
+        values.append(status)
+
+    if not fields:
+        return False
+
+    values.append(task_id)
+
+    query = f"""
+        UPDATE tasks
+        SET {", ".join(fields)}
+        WHERE id = ?
+    """
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(query, values)
+    conn.commit()
+    updated = cursor.rowcount
+    conn.close()
+    return updated > 0
+
+
+def delete_task(task_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    conn.commit()
+    deleted = cursor.rowcount
+    conn.close()
+    return deleted > 0
